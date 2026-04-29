@@ -299,9 +299,65 @@ a{color:var(--accent)}
 .day-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
 .day-header h2{font-family:var(--fd);font-size:1.3rem;font-weight:400}
 .day-date{font-size:.78rem;color:var(--muted);margin-top:3px}
+
+/* ── API KEY MODAL ───────────────────────────────── */
+.api-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999; padding: 20px;
+}
+.api-modal {
+  background: var(--surface); border-radius: var(--r);
+  padding: 24px; max-width: 420px; width: 100%;
+  border: 1px solid var(--border);
+}
+.api-modal h2 { font-family: var(--fd); font-size: 1.2rem; font-weight: 400; margin-bottom: 8px; }
+.api-modal p  { font-size: .8rem; color: var(--muted); line-height: 1.6; margin-bottom: 12px; }
+.api-modal code {
+  display: block; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; font-size: .72rem; line-height: 1.7;
+  color: var(--text); margin-bottom: 14px; user-select: all; word-break: break-all;
+}
+.api-input {
+  width: 100%; padding: 11px 13px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); font-family: var(--fm); font-size: .82rem;
+  outline: none; margin-bottom: 10px; transition: border-color .2s;
+}
+.api-input:focus { border-color: var(--accent); }
+.api-input::placeholder { color: var(--muted); }
+.api-btn {
+  width: 100%; padding: 13px; border-radius: var(--r); border: none;
+  background: var(--accent); color: #fff; font-family: var(--fd);
+  font-size: .95rem; font-weight: 600; cursor: pointer; transition: opacity .2s;
+}
+.api-btn:active { opacity: .8; }
+.api-note { font-size: .68rem; color: var(--muted); text-align: center; margin-top: 10px; line-height: 1.5; }
+
 </style>
 </head>
 <body>
+
+
+<div class="api-overlay" id="apiOverlay" style="display:none">
+  <div class="api-modal">
+    <h2>🔑 API Key Required</h2>
+    <p>MBA Nourish uses Claude AI to analyze your meals. To use it you need a free Anthropic API key — it takes about 2 minutes to get one.</p>
+
+    <p><strong>How to get your key:</strong></p>
+    <p>1. Go to <strong>console.anthropic.com</strong> and create a free account<br>
+       2. Click <strong>API Keys</strong> in the left sidebar<br>
+       3. Click <strong>Create Key</strong>, give it a name, copy it<br>
+       4. Paste it below</p>
+
+    <p style="margin-bottom:6px">Or ask Claude directly by copying and pasting this:</p>
+    <code>How do I get an Anthropic API key to use in a personal project? Walk me through getting one from console.anthropic.com</code>
+
+    <input type="text" class="api-input" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+    <button class="api-btn" onclick="saveApiKey()">Save & Continue</button>
+    <p class="api-note">Your key is saved only in this browser. It is never sent anywhere except directly to Anthropic's servers to process your meal analysis.</p>
+  </div>
+</div>
 
 <nav class="bottom-nav">
   <button class="nav-tab on" onclick="showPage('analyze',this)">
@@ -554,6 +610,12 @@ a{color:var(--accent)}
     <div id="goalsMinerals"></div>
     <div class="goals-section-title">💧 Hydration</div>
     <div id="goalsHydration"></div>
+    <div style="margin-top:14px;padding:12px;background:var(--surface2);border-radius:10px;font-size:.75rem;color:var(--muted);line-height:1.6">
+      🔑 <strong style="color:var(--text)">API Key</strong><br>
+      Your Anthropic API key is stored in this browser only.<br>
+      <span onclick="localStorage.removeItem(&quot;mba_api_key&quot;);checkApiKey()" style="color:var(--accent2);cursor:pointer;text-decoration:underline">Change or re-enter key</span>
+    </div>
+
     <div class="disclaimer">⚕️ These are general guidelines based on NIH/USDA Dietary Reference Intakes. Not medical advice. Consult your healthcare provider before significant dietary changes, especially with a medical condition.</div>
   </div>
 </main>
@@ -871,7 +933,12 @@ async function analyze() {
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': getApiKey(),
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
@@ -1178,9 +1245,37 @@ function clearAllHistory() {
   renderHistory();
 }
 
+
+// ── API KEY ───────────────────────────────────────────
+function getApiKey() {
+  return localStorage.getItem('mba_api_key') || '';
+}
+
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val.startsWith('sk-ant-')) {
+    alert("That doesn't look like a valid Anthropic API key. It should start with sk-ant-");
+    return;
+  }
+  localStorage.setItem('mba_api_key', val);
+  document.getElementById('apiOverlay').style.display = 'none';
+}
+
+function checkApiKey() {
+  if (!getApiKey()) {
+    document.getElementById('apiOverlay').style.display = 'flex';
+  }
+}
+
+// Allow pressing Enter in the key input
+document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveApiKey();
+});
+
 // ── INIT ──────────────────────────────────────────────
 buildGlasses();
 renderGoals();
+checkApiKey();
 </script>
 </body>
 </html>

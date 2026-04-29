@@ -341,7 +341,7 @@ a{color:var(--accent)}
   <!-- PHOTO -->
   <div id="input-photo">
     <div class="upload-zone" id="uploadZone">
-      <input type="file" accept="image/*" capture="environment" id="fileInput" onchange="handleFile(event,'photo')">
+      <input type="file" accept="image/*" id="fileInput" onchange="handleFile(event,'photo')">
       <img class="preview-img" id="previewImg" alt="">
       <span class="upload-icon" id="uploadIcon">🍽️</span>
       <h3 id="uploadTitle">Tap to photograph your meal</h3>
@@ -352,7 +352,7 @@ a{color:var(--accent)}
   <!-- LABEL -->
   <div id="input-label" style="display:none">
     <div class="upload-zone" id="uploadZoneLabel">
-      <input type="file" accept="image/*" capture="environment" id="fileInputLabel" onchange="handleFile(event,'label')">
+      <input type="file" accept="image/*" id="fileInputLabel" onchange="handleFile(event,'label')">
       <img class="preview-img" id="previewImgLabel" alt="">
       <span class="upload-icon" id="uploadIconLabel">🏷️</span>
       <h3 id="uploadTitleLabel">Photograph nutrition label</h3>

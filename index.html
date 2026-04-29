@@ -344,8 +344,8 @@ a{color:var(--accent)}
       <input type="file" accept="image/*" id="fileInput" onchange="handleFile(event,'photo')">
       <img class="preview-img" id="previewImg" alt="">
       <span class="upload-icon" id="uploadIcon">🍽️</span>
-      <h3 id="uploadTitle">Tap to photograph your meal</h3>
-      <p id="uploadSub">or drop a photo here on desktop</p>
+      <h3 id="uploadTitle">Add a photo of your meal</h3>
+      <p id="uploadSub">Take a photo or choose from your library</p>
     </div>
   </div>
 
@@ -355,8 +355,8 @@ a{color:var(--accent)}
       <input type="file" accept="image/*" id="fileInputLabel" onchange="handleFile(event,'label')">
       <img class="preview-img" id="previewImgLabel" alt="">
       <span class="upload-icon" id="uploadIconLabel">🏷️</span>
-      <h3 id="uploadTitleLabel">Photograph nutrition label</h3>
-      <p id="uploadSubLabel">AI reads exact numbers — no estimating</p>
+      <h3 id="uploadTitleLabel">Add a nutrition label photo</h3>
+      <p id="uploadSubLabel">Take a photo or choose from your library</p>
     </div>
   </div>
 
@@ -503,8 +503,14 @@ a{color:var(--accent)}
       <p class="prof-hint">Used for iron, folate & other sex-specific targets</p>
     </div>
     <div class="prof-field">
-      <label class="prof-label">Date of Birth</label>
-      <input type="date" class="prof-input" id="profDOB" onchange="saveProfile()">
+      <label class="prof-label">Age</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" class="prof-input" id="profAgeInput" placeholder="e.g. 31"
+          min="1" max="120" onchange="saveProfile()" style="flex:1">
+        <span style="font-size:.75rem;color:var(--muted);white-space:nowrap">years old</span>
+      </div>
+      <p class="prof-hint">Or enter your date of birth for more precision</p>
+      <input type="date" class="prof-input" id="profDOB" onchange="saveProfile()" style="margin-top:6px">
       <p class="prof-hint" id="profAge"></p>
     </div>
     <div class="prof-field">
@@ -702,8 +708,10 @@ function computeUSDATargets(p) {
 
 function buildProfileObject() {
   const dob = userProfile.dob || '';
+  const ageInput = parseInt(userProfile.ageInput) || 0;
   let age = 30;
   if (dob) age = Math.floor((Date.now() - new Date(dob).getTime()) / (365.25*24*3600*1000));
+  if (ageInput >= 1 && ageInput <= 120) age = ageInput; // typed age overrides DOB
   const w = parseFloat(userProfile.weight) || 65;
   const unit = userProfile.weightUnit || 'lbs';
   return { sex: userProfile.sex||'female', age, weightKg: unit==='lbs'?w*0.4536:w, activity: userProfile.activity||'sedentary' };
@@ -730,8 +738,9 @@ function getProfilePromptContext() {
 }
 
 function saveProfile() {
-  userProfile.dob    = document.getElementById('profDOB')?.value || '';
-  userProfile.weight = document.getElementById('profWeight')?.value || '';
+  userProfile.dob       = document.getElementById('profDOB')?.value || '';
+  userProfile.ageInput  = document.getElementById('profAgeInput')?.value || '';
+  userProfile.weight    = document.getElementById('profWeight')?.value || '';
   localStorage.setItem('mba_profile', JSON.stringify(userProfile));
   updateProfileSummary();
   renderGoals();
@@ -753,8 +762,9 @@ function setSegUI(segId, val) {
 }
 
 function loadProfileUI() {
-  if (userProfile.dob)    document.getElementById('profDOB').value    = userProfile.dob;
-  if (userProfile.weight) document.getElementById('profWeight').value = userProfile.weight;
+  if (userProfile.dob)      document.getElementById('profDOB').value      = userProfile.dob;
+  if (userProfile.ageInput) document.getElementById('profAgeInput').value = userProfile.ageInput;
+  if (userProfile.weight)   document.getElementById('profWeight').value   = userProfile.weight;
   setSegUI('sexSeg',        userProfile.sex        || 'female');
   setSegUI('weightUnitSeg', userProfile.weightUnit || 'lbs');
   setSegUI('activitySeg',   userProfile.activity   || 'sedentary');
@@ -775,7 +785,10 @@ function updateProfileSummary() {
     'Protein: ' + u['Protein'].val + 'g · Calories: ' + u['Calories'].val + ' kcal<br>' +
     'Iron: ' + u['Iron'].val + 'mg · Calcium: ' + u['Calcium'].val + 'mg · Folate: ' + u['Folate'].val + 'mcg';
   const hint = document.getElementById('profAge');
-  if (hint && p.age) hint.textContent = 'Age: ' + p.age + ' years old';
+  if (hint && p.age) {
+    const src = userProfile.dob && !parseInt(userProfile.ageInput) ? ' (from date of birth)' : '';
+    hint.textContent = 'Using age: ' + p.age + src;
+  }
 }
 
 function renderGoals() {
